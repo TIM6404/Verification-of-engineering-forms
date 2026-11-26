@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>工程流程檢核表單管理系統</title>
+  <!-- html2canvas & jsPDF CDN for JPG / PDF Export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #e6e9ef;
+      --surface: #e6e9ef;
+      --shadow-light: #ffffff;
+      --shadow-dark: #c2c8d4;
+      --text-main: #1e293b;
+      --text-sub: #475569;
+      --accent: #3b82f6;
+      --accent-dark: #1d4ed8;
+      --success: #059669;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --line-green: #06c755;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", Roboto, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.55;
+      font-size: 16px;
+    }
+
+    /* Neumorphism Core Utilities */
+    .neu-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+      padding: 22px;
+      margin-bottom: 22px;
+    }
+
+    .neu-card-sm {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+      padding: 16px 18px;
+      margin-bottom: 14px;
+    }
+
+    .neu-inset {
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+      border: none;
+      padding: 12px 14px;
+      color: var(--text-main);
+      font-size: 15.5px;
+      outline: none;
+      width: 100%;
+      transition: all 0.2s ease;
+    }
+
+    .neu-inset:focus {
+      box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light), 0 0 0 2px rgba(59, 130, 246, 0.35);
+    }
+
+    .neu-btn {
+      background: var(--surface);
+      border: none;
+      border-radius: var(--radius-sm);
+      box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 15px;
+      padding: 11px 18px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .neu-btn:active, .neu-btn.active {
+      box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+    }
+
+    .neu-btn-primary {
+      color: #ffffff;
+      background: linear-gradient(145deg, #428bff, #3174e0);
+      box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+    }
+    .neu-btn-primary:active {
+      background: #2563eb;
+      box-shadow: inset 3px 3px 6px rgba(0,0,0,0.25);
+    }
+
+    .neu-btn-success {
+      color: #ffffff;
+      background: linear-gradient(145deg, #12c98c, #0ea371);
+    }
+    .neu-btn-line {
+      color: #ffffff;
+      background: linear-gradient(145deg, #07d95c, #05b34c);
+    }
+    .neu-btn-danger {
+      color: var(--danger);
+    }
+
+    /* Layout Container */
+    .app-container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px 18px 96px 18px;
+    }
+
+    /* Top Header */
+    .app-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .app-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge-pill {
+      font-size: 13px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+
+    /* Grid Helpers */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 680px) {
+      .grid-3, .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Project Card */
+    .project-item {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      transition: transform 0.15s ease;
+    }
+    .project-meta h3 {
+      margin: 0 0 5px 0;
+      font-size: 18px;
+      color: var(--text-main);
+    }
+    .project-meta p {
+      margin: 0;
+      font-size: 14.5px;
+      color: var(--text-sub);
+    }
+    .project-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Sheet Tabs Grid - 放大字體更清晰易點選 */
+    .sheet-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .sheet-tab {
+      padding: 15px 14px;
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+      text-align: center;
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      letter-spacing: 0.3px;
+    }
+    .sheet-tab.active {
+      box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+      color: var(--accent-dark);
+    }
+    .sheet-tab .dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* Checklist & Radio Buttons - 2. 項目文字變大易辨識 */
+    .check-row {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+      margin-bottom: 14px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .check-row-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .check-title {
+      font-weight: 700;
+      font-size: 17px;
+      line-height: 1.5;
+      color: #0f172a;
+      flex: 1;
+      min-width: 220px;
+    }
+    .check-subtext {
+      font-size: 14.5px;
+      color: var(--text-sub);
+      line-height: 1.45;
+    }
+    .check-hint {
+      font-size: 14px;
+      color: var(--warning);
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .toggle-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .neu-radio {
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .neu-radio.selected-ok {
+      box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+      color: var(--success);
+    }
+    .neu-radio.selected-ng {
+      box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+      color: var(--danger);
+    }
+    .neu-radio.selected-na {
+      box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+      color: var(--text-sub);
+    }
+
+    /* Survey multi-checkbox chips */
+    .chip-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 6px;
+    }
+    .neu-chip {
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--surface);
+      box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .neu-chip.checked {
+      box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+      color: var(--accent-dark);
+      font-weight: 800;
+    }
+
+    /* Photo Attachment Area */
+    .photo-box {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .photo-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .photo-thumb {
+      position: relative;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+      aspect-ratio: 4/3;
+      background: #cbd5e1;
+    }
+    .photo-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .photo-del-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(239, 68, 68, 0.92);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Section Header Banner */
+    .section-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 16px;
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+      margin: 20px 0 12px 0;
+      font-weight: 800;
+      font-size: 17.5px;
+      color: var(--accent-dark);
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    .sub-cat-header {
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--text-main);
+      margin: 14px 0 8px 4px;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    /* Fixed Bottom Action Bar */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(230, 233, 239, 0.95);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 -4px 12px rgba(194, 200, 212, 0.7);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      z-index: 100;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(45, 55, 72, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 200;
+    }
+    .modal-backdrop.show {
+      display: flex;
+    }
+    .modal-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: 10px 10px 24px rgba(0,0,0,0.25);
+      max-width: 560px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 22px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--text-main);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 14.5px;
+      font-weight: 600;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      z-index: 300;
+      opacity: 0;
+      transform: translateY(-10px);
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hidden { display: none !important; }
+    label.field-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+
+    /* A4 列印/匯出最佳化樣式 */
+    .a4-exporting {
+      width: 794px !important;
+      max-width: 794px !important;
+      background: #ffffff !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      padding: 24px 28px !important;
+    }
+    .a4-exporting .check-row,
+    .a4-exporting .section-banner,
+    .a4-exporting .photo-box,
+    .a4-exporting .neu-inset,
+    .a4-exporting .neu-radio,
+    .a4-exporting .neu-chip {
+      box-shadow: none !important;
+      border: 1px solid #cbd5e1 !important;
+      background: #ffffff !important;
+    }
+    .a4-exporting .neu-radio.selected-ok {
+      background: #ecfdf5 !important;
+      border-color: #059669 !important;
+    }
+    .a4-exporting .neu-radio.selected-ng {
+      background: #fef2f2 !important;
+      border-color: #dc2626 !important;
+    }
+    .a4-exporting .neu-chip.checked {
+      background: #eff6ff !important;
+      border-color: #2563eb !important;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header -->
+  <header class="app-header">
+    <div>
+      <h1 class="app-title">🏗️ 工程流程檢核表單管理系統 <span class="badge-pill">Neumorphism 響應式版</span></h1>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <button type="button" class="neu-btn" id="btnSoundToggle" onclick="toggleClickSound()" title="切換清脆點擊音效">🔊 音效：開</button>
+      <button type="button" class="neu-btn" id="btnBackHome" onclick="goHome()" style="display:none;">⬅ 返回專案列表</button>
+    </div>
+  </header>
+
+  <!-- VIEW 1: 專案建立與列表 -->
+  <section id="viewHome">
+    <div class="neu-card">
+      <h2 style="margin-top:0; font-size:18.5px;">➕ 建立新專案項目</h2>
+      <div class="grid-3">
+        <div>
+          <label class="field-label">店編 *</label>
+          <input type="text" id="inpStoreCode" class="neu-inset" placeholder="例：A1024" />
+        </div>
+        <div>
+          <label class="field-label">店名 *</label>
+          <input type="text" id="inpStoreName" class="neu-inset" placeholder="例：台北忠孝店" />
+        </div>
+        <div>
+          <label class="field-label">地址 *</label>
+          <input type="text" id="inpStoreAddr" class="neu-inset" placeholder="例：台北市大安區忠孝東路..." />
+        </div>
+      </div>
+      <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+        <button type="button" id="btnAddProject" class="neu-btn neu-btn-primary" onclick="addProject()">＋ 新增專案項目</button>
+      </div>
+    </div>
+
+    <div class="neu-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h2 style="margin:0; font-size:18.5px;">📋 專案清單（可隨時修改並自動更新修改日期）</h2>
+        <span id="projectCountBadge" class="badge-pill">0 筆專案</span>
+      </div>
+      <div id="projectListContainer"></div>
+    </div>
+  </section>
+
+  <!-- VIEW 2: 專案工作表選擇與表單填寫 -->
+  <section id="viewWorkspace" class="hidden">
+    <div class="neu-card" id="projectHeaderCard">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+        <span class="badge-pill">當前專案資訊（修改欄位將自動更新表單日期）</span>
+        <span style="font-size:14.5px; font-weight:700; color:var(--accent-dark);">
+          🗓️ 表單自動修改日期：<span id="displayAutoDate">-</span>
+        </span>
+      </div>
+      <div class="grid-3">
+        <div>
+          <label class="field-label">店編</label>
+          <input type="text" id="editStoreCode" class="neu-inset" oninput="updateCurrentProjectMeta()" />
+        </div>
+        <div>
+          <label class="field-label">店名</label>
+          <input type="text" id="editStoreName" class="neu-inset" oninput="updateCurrentProjectMeta()" />
+        </div>
+        <div>
+          <label class="field-label">地址</label>
+          <input type="text" id="editStoreAddr" class="neu-inset" oninput="updateCurrentProjectMeta()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 9大 SHEET 選擇項目 -->
+    <div class="neu-card" style="padding:18px;">
+      <label class="field-label" style="margin-bottom:12px; font-size:15.5px; color:var(--text-main);">
+        📑 依據附件「SHEET」名稱選擇檢核項目：
+      </label>
+      <div class="sheet-grid" id="sheetTabsContainer"></div>
+    </div>
+
+    <!-- 匯出與檢核表單本體區域 -->
+    <div id="exportCaptureArea" class="neu-card">
+      <div id="exportSheetHeader" style="border-bottom:2px solid #cbd5e1; padding-bottom:12px; margin-bottom:16px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <div>
+          <h2 id="activeSheetTitle" style="margin:0; font-size:21px; color:var(--accent-dark);">表單標題</h2>
+          <div id="exportMetaLine" style="font-size:14.5px; color:var(--text-sub); margin-top:4px; font-weight:600;"></div>
+        </div>
+        <div style="text-align:right; font-size:14.5px;">
+          <div><strong>自動修改日期：</strong><span id="exportDateBadge"></span></div>
+          <div id="exportProgressBadge" style="color:var(--success); font-weight:700; margin-top:2px;"></div>
+        </div>
+      </div>
+
+      <div id="dynamicFormBody"></div>
+
+      <!-- 分項拍照與文字補充區塊 -->
+      <div class="photo-box" id="exportPhotoSection">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <strong style="font-size:16.5px;">📷 本分項表單「現場拍照」與「文字補充」</strong>
+          <div class="no-export-btns">
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" multiple class="hidden" onchange="handlePhotoUpload(event)" />
+            <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handlePhotoUpload(event)" />
+            <button type="button" class="neu-btn neu-btn-primary" onclick="document.getElementById('cameraInput').click()">📸 立即拍照</button>
+            <button type="button" class="neu-btn" onclick="document.getElementById('galleryInput').click()">🖼️ 從相簿選取</button>
+          </div>
+        </div>
+        <div id="photoPreviewGrid" class="photo-preview-grid"></div>
+        <div style="margin-top:12px;">
+          <label class="field-label">📝 分項表單文字補充說明：</label>
+          <textarea id="sheetSupplementNote" rows="3" class="neu-inset" placeholder="請輸入本分項表單之補充說明、異常追蹤或現場備註..." oninput="saveSheetSupplementNote()"></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Fixed Bottom Action Bar -->
+<div class="bottom-bar hidden" id="workspaceBottomBar">
+  <button type="button" class="neu-btn neu-btn-success" onclick="confirmAndExportAll()">✅ 確認完成（A4分頁輕量 *.JPG / *.PDF + 相簿儲存）</button>
+  <button type="button" class="neu-btn neu-btn-line" onclick="shareViaLine()">💬 LINE 傳送分享</button>
+</div>
+
+<!-- Modal: Confirm Output & Download / Album Save -->
+<div class="modal-backdrop" id="exportResultModal">
+  <div class="modal-card">
+    <h3 style="margin-top:0; color:var(--success); font-size:19px;">✅ 表單已確認並完成 A4 輕量化分頁匯出！</h3>
+    <p id="exportFileStatsText" style="font-size:14.5px; color:var(--text-sub); margin-bottom:14px;">
+      已產生低容量、高清晰度 <strong>A4 規格 *.JPG</strong> 與 <strong>A4 自動分頁 *.PDF</strong> 檢核表單檔案。請點擊下方按鈕將資料存入使用者相簿或透過 LINE 傳送：
+    </p>
+    <div id="generatedPreviewWrap" style="margin-bottom:14px; text-align:center;">
+      <img id="generatedJpgPreview" src="" alt="A4表單預覽" style="max-width:100%; max-height:240px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.15);" />
+    </div>
+    <div class="grid-2" style="margin-bottom:12px;">
+      <button type="button" class="neu-btn neu-btn-primary" onclick="downloadGeneratedJpg()">📥 儲存 A4 *.JPG（存入相簿）</button>
+      <button type="button" class="neu-btn neu-btn-primary" onclick="downloadGeneratedPdf()">📄 儲存 A4分頁 *.PDF</button>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:space-between;">
+      <button type="button" class="neu-btn neu-btn-line" style="flex:1;" onclick="shareViaLine()">💬 立即以 LINE 傳送</button>
+      <button type="button" class="neu-btn" onclick="closeModal('exportResultModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+// 內嵌完整解析自「116年發包、監工、驗收相關表單.xlsx」之 9 個 SHEET 結構資料
+const FORMS_SCHEMA = {"發包現說項目": {"type": "survey", "sections": [{"section": "結構室裝", "items": [{"label": "申請作業/認證申請", "content": "□ 結構鑑定認證    □室內裝修申請    □變更使用執照   □ 結構外審申請", "extra": ""}, {"label": "結構補強", "content": "□ 無此項    □ 須結構補強", "extra": ""}, {"label": "物件結構組成", "content": "□ 鐵皮   □RC   □磚牆   □鐵皮+RC    □鐵皮+磚牆      □磚牆+RC   □其它_______", "extra": ""}, {"label": "病蟲/鼠害問題", "content": "□ 無此項  □ 已完成封洞    □無法封洞   □除鼠防治作業  □除白蟻治作業", "extra": ""}, {"label": "結構漏水", "content": "□ 無此項  □ 無法判定    □可施作集水盤、導流板    □無法施作", "extra": ""}, {"label": "地排廢水排出處", "content": "□  無  □有(標示於現況圖上、layout圖上)", "extra": ""}, {"label": "結構洗洞位置", "content": "□ 無此項  □ 業主確認    □管委會確認    □無法施作", "extra": ""}, {"label": "佔騎樓或違建", "content": "□ 標示於layout圖   □ 騎樓前方   □建物側面    □建物後方   □其他位置", "extra": ""}, {"label": "電箱設置位置", "content": "", "extra": ""}, {"label": "可施工時間", "content": "", "extra": ""}]}, {"section": "拆除項目說明", "items": [{"label": "復原要求", "content": "□ 原狀返還    □ 現狀返還", "extra": ""}, {"label": "騎樓地坪", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：                                                預估拆除深度(cm)：", "extra": "預估拆除數量(m²)："}, {"label": "騎樓天花板", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：", "extra": "預估拆除數量(m²)："}, {"label": "騎樓牆壁面", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：                                                預估拆除深度(cm)：", "extra": "預估拆除數量(m²)："}, {"label": "賣場地板坪", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：                                                預估拆除深度(cm)：", "extra": "預估拆除數量(m²)："}, {"label": "賣場天花板", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：", "extra": "預估拆除數量(m²)："}, {"label": "賣場壁面", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：                                                預估拆除深度(cm)：", "extra": "預估拆除數量(m²)："}, {"label": "賣場鋁窗", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：", "extra": "預估拆除數量(m)："}, {"label": "賣場木造隔間", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：", "extra": "預估拆除數量(m²)："}, {"label": "後場地坪", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：                                                預估拆除深度(cm)：", "extra": "預估拆除數量(m²)："}, {"label": "後場天花板", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：", "extra": "預估拆除數量(m²)："}, {"label": "後場牆壁面", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：                                                預估拆除深度(cm)：", "extra": "預估拆除數量(m²)："}, {"label": "其他樓層地坪", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：                                                預估拆除深度(cm)：", "extra": "預估拆除數量(m²)："}, {"label": "其他樓層天花板", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：", "extra": "預估拆除數量(m²)："}, {"label": "其他樓層牆壁面", "content": "□ 無此項    □全部拆除    □部分拆除    □其他：                                                預估拆除深度(cm)：", "extra": "預估拆除數量(m²)："}, {"label": "既有廁所天花板/地坪", "content": "天花板：□ 保留    □全部拆除    □部分拆除 ； 地板：□ 保留    □全部拆除    □部分拆除    □地版", "extra": ""}, {"label": "既有廁所隔間/設備", "content": "□保留    □依簽核範圍拆除   , 拆除衛浴器具：□開關___座    □馬桶___座    □洗手台___座    □小便斗___座", "extra": "拆除器具保留處："}, {"label": "既有(RC/磚牆)隔間隔戶牆", "content": "□保留    □依簽核範圍拆除  □圖面上註明", "extra": ""}, {"label": "既有招牌", "content": "□ 無此項    a.橫招  □拆除□保留  b.直招□拆除□保留    c.立招□拆除□保留 ， d.落地招□拆除□保留：", "extra": ""}, {"label": "既有樓梯部份", "content": "□ 無此項    □全部打除    □保留    □轉向修改    □封閉    ：", "extra": ""}, {"label": "既有開關箱(室內)", "content": "□ 無此項    □ 保留  □ 拆除   □ 移位  □ 斷電", "extra": ""}, {"label": "既有鐵捲門機組", "content": "□ 無此項    □ 全部拆除    □ 保留   □ 拆予房東    □ 拆予加盟者    □其他", "extra": ""}, {"label": "既有外部植物遮擋處理", "content": "□ 無此項    □ 保留   □ 拆除     □ 修剪    □ 移植", "extra": ""}, {"label": "特殊防護需求", "content": "", "extra": ""}, {"label": "其他補充說明", "content": "", "extra": ""}]}, {"section": "騎樓工程", "items": [{"label": "騎樓天花板", "content": "騎樓天花板高度：_____cm    □新作天花板(含維修孔)  □部分新作   □新作含骨料    □保留清潔  □噴漆  □其他", "extra": "型制： □卡U □塑膠 □其他："}, {"label": "挑高騎樓天花板", "content": "騎樓天花板高度：_____cm    □新作含骨料    □保留清潔  □噴漆  □其他", "extra": "型制： □C鋼 □卡U □塑膠 □其他："}, {"label": "騎樓天溝排水", "content": "□新作白鐵天溝  □原天溝保留  □新作落水管，____支數______管徑大小  □新作水切", "extra": ""}, {"label": "騎樓雨遮", "content": "□無  □新作         cm   □更換鐵皮(骨架不換)    □直接鐵皮覆蓋(舊鐵皮不拆)", "extra": ""}, {"label": "騎樓照明", "content": "□ 騎樓深度_____cm  □燈具_____排   □無此項   □其他特殊設計______________", "extra": ""}, {"label": "騎樓地磚", "content": "□新作止滑地磚  □部分新作  □保留清潔  □房東施作  □維修孔/陰井覆蓋  □無此項  □其他：", "extra": "預估施作數量(m²)："}, {"label": "賣場門口", "content": "高差：_____cm，坡長_____cm ； □ 內削無障礙斜坡   □外推無障礙斜坡 / □無法施作施作無障礙空間   □ 新作壓花白鐵板斜坡或階梯(需貼覆金鋼砂)    □ 無此項 □ 其他", "extra": ""}, {"label": "風除門施作", "content": "□無  □新作           X          cm   □更換玻璃(骨架不換)", "extra": ""}, {"label": "騎樓牆面柱面", "content": "□新作壁磚  □新作塑鋁板  □保留清潔  □隱藏式維修孔 ，規格：                □其他特殊______________", "extra": "預估施作數量(m²)："}, {"label": "台電接戶電錶箱", "content": "□騎樓柱上  □樓梯間   □大樓授電室  □其他位置(標示於layout圖上)", "extra": "預估施作距離(m)："}, {"label": "公共電話", "content": "□新作____組      □ 無此項      □ 其他", "extra": ""}, {"label": "騎樓拒馬施作", "content": "□新作____組      □ 無此項      □ 其他", "extra": ""}, {"label": "無障礙設施", "content": "高差：_____cm，坡長_____cm ，不銹鋼扶手__       ___cm，迴轉平台__      X     ___cm； □ 內削無障礙斜坡   □外推無障礙斜坡 / □無法施作施作無障礙空間   □ 新作壓花白鐵板斜坡或階梯(需貼覆金鋼砂)    □ 無此項 □ 其他", "extra": ""}, {"label": "路面高差補強", "content": "高差：_____cm，坡長_____cm ，不銹鋼扶手__       ___cm / □無法施作施   □ 新作壓花白鐵板斜坡或階梯(需貼覆金鋼砂)    □ 無此項 □ 其他", "extra": ""}, {"label": "警示線、警告標語", "content": "□埋入式_     ___組      □ 浮貼式_     ___組     警示線標示範圍   __       __", "extra": ""}, {"label": "其他作業需求", "content": "□ 戶外休憩桌椅    □ 長板凳休憩椅   □ 新設拒馬    □ 水泥地坪    □ 柏油地坪    □ 戶外植栽 / □ 牆面輸出噴畫 _     ___組      □ 櫥窗輸出噴畫    □ 帆布輸出噴畫 / □ 投射燈     □ 騎樓壁面新作布旗桿 / □ 騎樓地板與路面高差 _____cm   /  坡長_____cm    □ 階梯  □斜坡，", "extra": ""}, {"label": "其他補充說明", "content": "", "extra": ""}]}, {"section": "賣場部份", "items": [{"label": "賣場天花板", "content": "賣場天花板高度：_____cm    □ 新作輕鋼架天花板   □部分新作   □ 包樑式天花板_________cm   最低施作高度：_____cm        □ 其他特殊____________", "extra": "預估施作數量(m²)："}, {"label": "賣場地磚範圍", "content": "□ 新作石英地磚  □ 部分新作、保留清潔   □保留清潔   □其他特殊___________", "extra": "預估施作數量(m²)："}, {"label": "後櫃台形象牆", "content": "□有/標準塑鋁板___________     □無/鏤空噴畫輸出___________ □Logo___________ □其他特殊設計___________", "extra": "預估施作數量(m²)："}, {"label": "鋁框玻璃", "content": "□ 新作鋁本色鋁框  □ 新作他色鋁框   □ 既有保留清潔    □ 依大樓制式   □ 其他特殊______________", "extra": "預估施作數量(m)："}, {"label": "鋁框工法", "content": "", "extra": ""}, {"label": "自動門組", "content": "□ 雙開_____  □ 單開_____  □ 保留清潔     □軒天    □無     □其他", "extra": "預估施作數量(m²)："}, {"label": "推拉門組", "content": "□ 無此項    □ 單推 _____________cm   □ 雙推 ______________ cm   □ 特規______________", "extra": "預估施作數量(m²)："}, {"label": "空氣門組", "content": "□ 4尺_____台  □ 3尺_____台  □其他特殊___________", "extra": ""}, {"label": "賣場輕隔間(垂壁/壁面)", "content": "□ 新作塑鋁板    □ 新作美耐板       □ 新作矽酸鈣板    □ 新作隔溫岩棉  □其他特殊_____________________", "extra": "預估施作數量(m²)："}, {"label": "組合式冰箱(垂壁)", "content": "□ 無此項 □ 新作塑鋁板    □ 新作美耐板       □其他特殊_____________________", "extra": "預估施作數量(m²)："}, {"label": "開放式冰箱(垂壁)", "content": "□ 無此項 □ 新作塑鋁板    □ 新作美耐板       □其他特殊_____________________", "extra": ""}, {"label": "賣場掛畫/噴畫輸出設置", "content": "□ 掛畫  __幅    □ 噴畫輸出       □其他特殊_____________________", "extra": "預估施作數量(m²)："}, {"label": "後場門組", "content": "□ 新作數量                 □保留清潔數量                     □開放式掛簾組數量                    □其他特殊___________", "extra": ""}, {"label": "賣場特殊電源施作", "content": "□ 架凍櫃220V    □ 凍島櫃220V     □果昔機220V    □製冰機220V   □封膜機220V   □其他特殊___________", "extra": ""}, {"label": "排水施作", "content": "□ 地排  □ 明管   □新作   □保留清潔   □排水分路___________  □動力排水   □其他特殊___________", "extra": ""}, {"label": "消防施作", "content": "□ 鋁格柵  □ 網狀天花板   □櫥窗玻璃施作  □ 消防降管  □ 防火美耐板", "extra": ""}, {"label": "其他工事", "content": "□ 地坪墊高______cm         □鐵捲門保留可下放(控制開關保留) / □ 新作遮陽捲簾    □ 新作隔熱紙    □ 循環扇 ____組    □ 吊櫃____M  □ 截油槽", "extra": "預估施作數量(m²)："}, {"label": "其他補充說明", "content": "", "extra": ""}]}, {"section": "休憩區域", "items": [{"label": "休憩區範圍", "content": "□ 新作地磚________材質   □新作壁面________材質    □新作天花板________材質   □其他特殊________", "extra": ""}, {"label": "--休憩區設施", "content": "□ 2人休憩桌椅____________  □ 吧檯桌椅____________  □ 資源回收垃圾桶   □ 7cm長桌____________  □其他桌椅____________ / □ 吊燈組          盞    □ USB插座          迴          □ 110V插座          迴   □ 混合插座                 迴", "extra": ""}, {"label": "對外廁所", "content": "□ 無此項  □ 施作單一廁所   □ 施作男女分廁廁所 □ 施作對外洗手台  天花板：□ 塑膠天花板    □ 輕鋼架天花板 / □ 地面防水施作/地磚樣式                          □ 牆面防水施作/磁磚樣式", "extra": ""}, {"label": "--廁所(器具)", "content": "□ 新作馬桶__座    □ 清潔噴頭__座   □ 緊急求助鈴  □ 新作小便斗__座   □ 置物檯__座     □ 洗手台    □ 排風扇      □ 原保留清潔    □ 其他", "extra": ""}, {"label": "其他補充說明", "content": "", "extra": ""}]}, {"section": "後場部份", "items": [{"label": "後場天花板", "content": "後場天花板高度：_____cm    □ 保留清潔  □ 新作天花板  □部分新作   □其他", "extra": ""}, {"label": "後場地磚", "content": "□ 保留清潔  □ 新作石英磚  □ 部分新作   □ 水泥施作  □ PVC地磚   □高差斜坡   □管線護蓋    □ 其他", "extra": ""}, {"label": "後場牆面", "content": "□ 保留清潔  □ 新作矽酸鈣板  □ 加裝上方吊櫃  □ 油漆                 (m²) □ 部分新作  □ 無此項   □ 其他", "extra": ""}, {"label": "廁所工事", "content": "□ 保留清潔  □ 新作馬桶   □ 新式洗手台   □ 抽風扇   □ 地坪需墊高    天花板：□ 塑膠天花板    □ 輕鋼架天花板   □ 無", "extra": ""}, {"label": "其他工事", "content": "□ 保留清潔   □ 新作加壓馬達，_____ HP     □辦公室區拉門   □後場排氣孔 / □ 新作分水錶   □ 新作電分錶  □ 新作電分錶", "extra": ""}, {"label": "建設專員補充說明", "content": "", "extra": ""}]}, {"section": "招牌", "items": [{"label": "橫招", "content": "□ 橫招長度_______cm    □  橫招高度_______cm  □ 依大樓制式   □仟納論   □其他特殊_______    LOGO位置_______", "extra": ""}, {"label": "直招", "content": "□ 直招 x______ 延伸___  ___cm，離地高度_______cm  □ 依大樓制式  □其它______", "extra": ""}, {"label": "立招", "content": "□ 立柱 x______支 ，直招 x______延伸______cm   □其它______", "extra": ""}, {"label": "落地招", "content": "□ ___     X    ____cm    □ 依大樓制式    □其他特殊_______", "extra": ""}, {"label": "功能招項目", "content": "□ 廁所    □ 友善廁所     □餐飲      □ATM      □停車", "extra": ""}, {"label": "斷光節能範圍", "content": "□ 右側_____cm    □ 左側_____cm", "extra": ""}, {"label": "外牆帆布廣告", "content": "□ 施作範圍___                                 ___       □ 施作尺寸_                                 _____", "extra": ""}, {"label": "招牌其它", "content": "□ 指示看板x____片  □ 壁掛燈箱  □ 室內其它燈箱  □ 室外其它招牌_________", "extra": ""}]}, {"section": "其他工式", "items": [{"label": "供水項目", "content": "□ 新作水塔，____頓     □ 新作抽水馬達 ，___ HP    □其他設計__________________", "extra": ""}, {"label": "室外機", "content": "□ 懸掛外牆上  □ 騎樓倒吊式  □ 騎樓落地式  □ 雨遮上方  □ 違建處  □ 其他(標示於layout上)      □ 防撞包覆泡棉   □ 鋁格柵   □ 導風罩", "extra": ""}, {"label": "冰箱其它工事", "content": "□ 冰箱加裝夜簾     □ 非平底式WI  □ 開放櫃墊高  □ 冰箱加裝上蓋   □ 開放櫃前方防水處理", "extra": ""}, {"label": "穿樑洗洞位置", "content": "□ 無此項   □有，共________個(圖面標示含洗洞線路)", "extra": ""}, {"label": "淨水系統(6分管施作)", "content": "□ RO設備_       __組     □ RO供水線路_        __組    □ RO出水口__         _組    □其它_____________", "extra": ""}, {"label": "燈線、燈具配置", "content": "圖面標示 及說明__________________________________________________", "extra": ""}, {"label": "監視設備、防盜鏡配置", "content": "圖面標示 及說明__________________________________________________", "extra": ""}, {"label": "房東負擔、保留項目", "content": "□ 無 □有          圖面標示 及說明__________________________________________________", "extra": ""}, {"label": "房東負擔、保留項目", "content": "□ 無 □有          圖面標示 及說明__________________________________________________", "extra": ""}, {"label": "既有用電種類", "content": "__________________________________________", "extra": ""}, {"label": "補充說明", "content": "", "extra": ""}]}]}, "工程變更通知單": {"type": "change_order", "basic_fields": ["店名", "部別", "新開/改裝", "店型別", "工程進場日", "工程驗收日", "開幕日", "店舖全場坪數"], "diff_fields": ["1.工程變更項目", "2.變更範圍", "3.發生時間點"], "reason_fields": ["C.主要變更原因", "D.詳述說明原因", "E.照片或其他輔助說明(附件：前後圖面差異，※圖面為必付條件)"]}, "施工檢查紀錄表": {"type": "inspection", "stages": [{"stage": "第一次檢查時間", "categories": [{"category": "作業規範", "items": [{"text": "物件現況搭設完整施工圍籬", "has_na": false, "is_bag_count": false, "yes_label": "是", "no_label": "否*"}, {"text": "廠商施作期間穿著公司規定制服", "has_na": false, "is_bag_count": false, "yes_label": "是", "no_label": "否*"}, {"text": "廠商施作期間佩戴施工安全帽", "has_na": false, "is_bag_count": false, "yes_label": "是", "no_label": "否*"}, {"text": "現場酒精性飲品/ 嚼食檳榔", "has_na": false, "is_bag_count": false, "yes_label": "無", "no_label": "有*"}], "note": "『*』請開立改善通知書，並要求廠商立即改善"}, {"category": "拆除後確認", "items": [{"text": "房東允諾自行拆除與搬運設備完成", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否*"}, {"text": "廢料遺留現場", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "拆除內容與現說相同", "has_na": false, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "物件面積範圍異常", "has_na": true, "is_bag_count": false, "yes_label": "是*", "no_label": "否"}, {"text": "設備配置放樣尺寸異常", "has_na": false, "is_bag_count": false, "yes_label": "是*", "no_label": "否"}, {"text": "室內部份拆除後有漏水情形、孔洞問題", "has_na": false, "is_bag_count": false, "yes_label": "有", "no_label": "無"}, {"text": "現說保留項目遭破壞", "has_na": true, "is_bag_count": false, "yes_label": "是*", "no_label": "否"}, {"text": "化糞孔有預留/化糞池位置確認", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "既有建無有白蟻問題", "has_na": true, "is_bag_count": false, "yes_label": "是*", "no_label": "否"}, {"text": "拆除後覆丈誤差(是否需調整平面圖規劃)", "has_na": true, "is_bag_count": false, "yes_label": "是*", "no_label": "否"}, {"text": "拆除垃圾種類及袋數(或照片)", "has_na": false, "is_bag_count": true, "yes_label": "是", "no_label": "否"}], "note": "『*』請立即與直屬主管回報"}, {"category": "裝潢/水電", "items": [{"text": "騎樓/賣場/後場地磚平整度良好，填縫正常", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "開關箱/變壓器位置與現說位置相同", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "水電PVC迴路管路排列整齊正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "RO供水水路2路              處及管徑(25mm)正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "排水分流規劃是否正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "地磚尺寸範圍/台電錶箱後二次側尺寸，量測完成", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}]}, {"stage": "第二次檢查時間", "categories": [{"category": "裝       潢        施工檢查", "items": [{"text": "賣場地磚鋪保護措施", "has_na": true, "is_bag_count": false, "yes_label": "有", "no_label": "否"}, {"text": "賣場放樣正確性檢查", "has_na": false, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "賣場/後場/休憩區地磚依圖施作", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "賣場壁板角料間隔為60cm", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "壁板角料及夾板牢固 ( 請搖晃測試 )", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "形象牆面施作範圍正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "鋁窗玻璃施作與LAYOUT圖相符", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "無障礙坡道設置坡長符合規範(參閱規範)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "原有窗戶、門完成封板(後場)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "對外廁所隔間範圍正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}, {"category": "水      電        施工檢查", "items": [{"text": "後場開關箱尺寸", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "三相電錶箱尺寸", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "100²-60²-38²-30²-22²-電力線               品牌  □ 太平洋  □華新麗華", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "100²-採用 2 1/2\"PVC管；60²、38²-採用 2\"PVC管", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "220V主流排20*2mm分流排15*1㎜", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "110V主流排15*2mm分流排15*1㎜", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "後場開關箱離地120㎝(受限高度至少離地100 ㎝)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "倉庫內管路直角直線/賣場管路盡走直角直線", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "變壓器安裝得宜，放置後場挖孔外箱加蓋", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "Ro出水管徑6分預做2路", "has_na": false, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "對外廁所器皿位置正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}, {"category": "室外機   施工檢查", "items": [{"text": "室外機擺放位置與現說一致", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "銅管銜接依規定工法施作 ( 喇叭頭銜接/氬氣焊接 )", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "室外機出線銜接主管管徑標準為-主管為7/分管為4分", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "空調冷氣安裝位置與現說一致", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "開放櫃下方排水使用硬管接入地排", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "室外機完成防灰塵保護及碰撞防護", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}, {"category": "雜      項       施工檢查", "items": [{"text": "騎樓施作天溝將PVC落水管銜接完整", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "電線迴路預留-公用電話/ATM燈箱/", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "設備位置與核准layout相同", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "IOT設備配線依規範施作", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}]}, {"stage": "第三次檢查時間", "categories": [{"category": "騎      樓", "items": [{"text": "騎樓壁磚平整勾縫水平整齊", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "騎樓閔石子施作範圍/樣式正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "台電電錶開關箱施作防護措施", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "騎樓無接縫玻璃矽利康確實(打滿、抹平)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "騎樓天花板施作平整無污損/無破口", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}, {"category": "賣       場", "items": [{"text": "鋁窗補強料磨光邊平整(請以手觸摸確認)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "鋁窗玻璃穩固(請用手搖晃測試)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "自動門規格/位置與LAYOUT圖相符", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "形象牆-塑鋁板接縫平整", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "賣場塑鋁板銜接處平整無翹角/填縫平整-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "賣場壁面轉角加裝防撞鋁條及平整", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "開放櫃/WI機器上方施作維修口", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}, {"category": "後       場      對外廁所", "items": [{"text": "後場壁面壁板溝縫矽利康填縫施作-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "對外廁所之櫃體施作/洗手台/鏡面-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "對外廁所門片亮面美耐板", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "對外廁所施作牆面置物板", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "對外廁所壁磚施作平整(請用手搖晃測試)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "對外廁所天花板施作PVC板平整及無破損", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}, {"category": "水      電        施工檢查", "items": [{"text": "騎樓燈具排數符合規範", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "自動門開關安裝位置前櫃台下方-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "燈具開關安裝位置後場門口壁面-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "賣場燈具位置排列與現說符合", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "空調面板施作後場門口壁面位置-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "店長鈴安裝前櫃台下方位置-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "變壓器安裝施作防護網", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "變壓器依規定裝設兩條接地線(綠)-", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "無熔絲開關採用新品，品牌：士林電機-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "110V總開關-NFB安裝(3P-75A)開關-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "220V總開關-NFB安裝(3P-150A)開關，(三台冷氣3P-175A)-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "110V/220V單一管路皆有接地線(綠線)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "電容器有依規定安裝接地線(綠線)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "賣場燈具分線規定主線5.5mm，分線2.0mm-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "插座迴路接地確實施作", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "廁所緊急鈴安裝位置正確(請試按)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "對外廁所衛浴設備規格正確，品牌： 凱薩", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "對外廁所水龍頭可正常復歸，品牌： 凱薩", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "對外廁所排風系統良好", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}, {"category": "開  放  櫃", "items": [{"text": "開放櫃機台間距之密合度(低3mm)", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "開放櫃機台擺放水平", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "冷凍櫃擺放之完成高度與WI齊平", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "開放櫃各機台之烤漆均勻", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "於WI、開放櫃上方依規定施作鐵盒子與集線槽", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}, {"category": "招牌工程", "items": [{"text": "後櫃台LOGO組投射燈燈具亮度均勻", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "橫招範圍位置/直招高度/延伸長度-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}, {"text": "特殊設計/大圖輸出/戶外輸出範圍規劃-正確", "has_na": true, "is_bag_count": false, "yes_label": "是", "no_label": "否"}]}]}]}, "裝潢": {"type": "acceptance", "ok_label": "是", "groups": [{"group": "騎樓部分", "items": [{"text": "騎樓地磚填縫後擦拭清潔確實", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "騎樓無接縫玻璃鋁窗矽利康確實", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "輕鋼架天花板L型收邊條平整", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "騎樓區域/停車空間清潔完成", "hint": "請與店長確認", "ok_label": "是", "ng_label": "異常"}, {"text": "無障礙坡道不鏽綱扶手點焊牢固", "hint": "符合地區無障礙法規", "ok_label": "是", "ng_label": "異常"}]}, {"group": "賣場部分", "items": [{"text": "檢查紀錄表缺失修正完畢", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "天花板有無變形 品牌-環球石膏天花板", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "石膏板無破損或骯髒 ( 60cm*60cm )", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "自動門有施作防夾開關", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "自動門有施作門鎖(點交鑰匙)", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "形象牆平整、接縫緊密(<0.1cm)", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "PVC踢腳板平整(灰色PVC、10cm)", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "壁面轉角防撞鋁條施作完整", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "垂壁與WI/OC上方間隙", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "賣場地磚平整/無破損或骯髒 ( 60cm*60cm )", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "間接照明燈盒油漆確實", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "倉庫門面材為亮面美耐板", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "倉庫門門框油漆為米白色", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "賣場清潔作業完成", "hint": "(請與店長確認)", "ok_label": "是", "ng_label": "異常"}, {"text": "塑鋁板平整.接縫緊密(<1mm)", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "禮品架位置與Layout圖相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "後場孔洞封除確認", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "漏水問題處理完成", "hint": "", "ok_label": "是", "ng_label": "異常"}]}]}, "水電": {"type": "acceptance", "ok_label": "正常", "groups": [{"group": "騎樓部分", "items": [{"text": "騎樓有預留公用電話線(如未到加裝ST盲蓋)", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "騎樓有施作水龍頭", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "台電錶前開關箱高度正確", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "三相電錶箱尺寸(150*60*35[標準三層]厚1.2mm)", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "騎樓燈具排列數符合規定", "hint": "", "ok_label": "正常", "ng_label": "異常"}]}, {"group": "賣場部分", "items": [{"text": "賣場平板燈燈具安裝符合規定", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "ATM未到場時線路預留位置須加裝ST盲蓋", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "開放廁所之衛浴設備規格正確 品牌-凱薩", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "櫃台後方壁板給排水管周圍孔洞封除", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "廁所照明開關施作於廁所內", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "變壓器有安裝、位置正確且有防護網", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "開關箱安裝依現說位置施作(離地120±2cm)", "hint": "環境因素影響最低離地高度100CM", "ok_label": "正常", "ng_label": "異常"}, {"text": "開關箱體尺寸正確", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "廁所緊急鈴可操作與復歸", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "洗手槽與廁所水壓正常(放水測試)", "hint": "", "ok_label": "正常", "ng_label": "異常"}]}, {"group": "後場部分", "items": [{"text": "後場開關箱尺寸(厚1.6mm)", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "無熔絲開關  品牌-士林電機", "hint": "3相220V是120*70*20，110V跟單相220V是120*50*20", "ok_label": "正常", "ng_label": "異常"}, {"text": "110V總開關-NFB安裝有依規定(3P-75A)", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "220V總開關-NFB安裝有依規定(3P-150A)", "hint": "3台冷氣者為(3P-175A)", "ok_label": "正常", "ng_label": "異常"}, {"text": "變壓器/電容器 品牌-變壓器:欣陽/長億，電容器:裕昌", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "店長鈴安裝位置正確(前櫃台下方)", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "自動門開關安裝位置正確(前櫃台下方)", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "燈具開關安裝位置正確(後場門口壁面)", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "110V 及220V-NFB使用(安培)規格有依規定", "hint": "依水電估價單內使用規範", "ok_label": "正常", "ng_label": "異常"}, {"text": "電源品牌有依規定施作", "hint": "品牌   □太平洋  □華新麗華", "ok_label": "正常", "ng_label": "異常"}, {"text": "未使用之NFB已完成拆除", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "設備與設備未共用NFB", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "開關箱NBF標示正確", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "各管線標示正確", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "生飲設備各管線連接水材正確", "hint": "", "ok_label": "正常", "ng_label": "異常"}, {"text": "電子點滅器有設定完成", "hint": "C1:間接燈盒 C2:字組招牌+袖招 C3:其他招牌 C4:無設定", "ok_label": "正常", "ng_label": "異常"}, {"text": "前後場偵煙器安裝", "hint": "", "ok_label": "正常", "ng_label": "異常"}]}]}, "招牌": {"type": "acceptance", "ok_label": "是", "groups": [{"group": "橫招", "items": [{"text": "施作長度範圍與現說相同", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "面材平整無破損與髒污", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "蓋板平整、無變形、髒污與無脫漆", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "蓋板確實鎖緊無變形", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "無暗影、燈具正常", "hint": "請全開測試", "ok_label": "是", "ng_label": "異常"}, {"text": "電線有整理完整", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "店舖名稱位置正確", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "袖招", "items": [{"text": "直招施做範圍與現說相同", "hint": "高度/延伸長度/大小", "ok_label": "是", "ng_label": "異常"}, {"text": "面材平整無破損與髒污", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "蓋板平整、無變形、髒污，確實鎖緊無變形", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "無暗影、燈具正常", "hint": "請全開測試", "ok_label": "是", "ng_label": "異常"}, {"text": "張貼辨識貼紙", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "安裝完整，無變形歪斜", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "適認性良好", "hint": "請離店100公尺外觀察於機車/汽車道拍照", "ok_label": "是", "ng_label": "異常"}, {"text": "電線有整理完整", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "施作位置與現說相同", "hint": "高度/大小", "ok_label": "是", "ng_label": "異常"}, {"text": "面材平整無破損與髒污", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "無暗影、燈具正常", "hint": "請全開測試", "ok_label": "是", "ng_label": "異常"}, {"text": "蓋板平整、無變形、髒污，確實鎖緊無變形", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "施作位置與現說相同", "hint": "高度/延伸長度/大小", "ok_label": "是", "ng_label": "異常"}, {"text": "面材平整無破損與髒污", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "無暗影、燈具正常", "hint": "請全開測試", "ok_label": "是", "ng_label": "異常"}, {"text": "蓋板平整、無變形、髒污，確實鎖緊無變形", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "水泥基座完整並貼反光貼紙", "hint": "水泥基礎修飾需完整", "ok_label": "是", "ng_label": "異常"}, {"text": "機能指示標示施做正確", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "適認性良好", "hint": "請離店100公尺外觀察於機車/汽車道拍照", "ok_label": "是", "ng_label": "異常"}, {"text": "無安全性疑慮產生", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "不銹鋼白鐵護欄平穩/不搖晃", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "指示招牌安裝位置得宜", "hint": "與開發確認", "ok_label": "是", "ng_label": "異常"}, {"text": "戶外輸出範圍正確/品質良好", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "垂壁上方泡棉字距離正確", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "玻璃輸出/壁面輸輸-西德張貼平整", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "掛畫是平整不易掉落", "hint": "", "ok_label": "是", "ng_label": "異常"}]}]}, "冰箱冷氣": {"type": "acceptance", "ok_label": "是", "groups": [{"group": "冷氣空調", "items": [{"text": "冷氣安裝位置正確與Layout相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "外觀完整無破損、髒污、變形等異常", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "冷氣回風網有安裝", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "升降面板功能正常", "hint": "請實際降下測試", "ok_label": "是", "ng_label": "異常"}, {"text": "後場風管有無確實安裝，且管徑為8英吋", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "室外機有無依現說位置安裝，且穩固", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "冷氣溫度設定於26度", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "開放櫃", "items": [{"text": "開放櫃安裝位置正確與Layout相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "外觀完整無破損、髒污、變形等異常", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "溫度顯示 4度C:2-6度/18度C顯示:5-18度", "hint": "需用紅外線測溫槍量測確認", "ok_label": "是", "ng_label": "異常"}, {"text": "層板抽取順暢", "hint": "請逐一測試", "ok_label": "是", "ng_label": "異常"}, {"text": "底部水盤排水口有濾網", "hint": "請掀開檢視", "ok_label": "是", "ng_label": "異常"}, {"text": "底部水盤清潔", "hint": "請掀開檢視", "ok_label": "是", "ng_label": "異常"}, {"text": "冷排風扇無異音", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "底部側蓋蓋板打開檢查排水配管", "hint": "排水孔與機台漏水口位置異常", "ok_label": "是", "ng_label": "異常"}, {"text": "底部排水施作存水灣", "hint": "請掀開檢視", "ok_label": "是", "ng_label": "異常"}]}, {"group": "WI冷藏庫", "items": [{"text": "WI安裝位置正確與Layout相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "外觀完整無破損、髒污、變形等異常", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "溫度顯示在2-6度", "hint": "需用紅外線測溫槍量測確認", "ok_label": "是", "ng_label": "異常"}, {"text": "運轉時小綠燈亮起", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "除霜時小紅燈亮起", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "LED燈開關正常", "hint": "請開關測試", "ok_label": "是", "ng_label": "異常"}, {"text": "LED燈正常無閃爍/色溫偏差/角度一致", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "門框電熱絲正常", "hint": "請用水測試", "ok_label": "是", "ng_label": "異常"}, {"text": "開門方向正確與Layout相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "門固定夾可90度開啟固定", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "開關門時平順無異音", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "後補門上逃生推桿正常", "hint": "請實際測試", "ok_label": "是", "ng_label": "異常"}, {"text": "後補門大把手開關正常", "hint": "請實際測試", "ok_label": "是", "ng_label": "異常"}, {"text": "庫內有鋪設綠色銅錢墊", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "防爆燈為LED(請拆開檢視)", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "前後場網架穩固", "hint": "請實際搖晃測試", "ok_label": "是", "ng_label": "異常"}, {"text": "前倉筆柱固定", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "溫度計感溫棒依規定安裝", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "蒸發器風扇運轉有正常無異音", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "庫板排水管出口固定且使用塑鋼土", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "排水軟管與水電PVC管施作矽力康", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "RI立式冷凍櫃", "items": [{"text": "RI冷凍安裝位置正確與Layout相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "外觀完整無破損、髒污、變形等異常", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "溫度在 -18度以下", "hint": "需用紅外線測溫槍量測確認", "ok_label": "是", "ng_label": "異常"}, {"text": "運轉時小綠燈有亮/除霜時小紅燈有亮", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "運轉機組音量正常", "hint": "確認運轉機組上螺絲全數上緊", "ok_label": "是", "ng_label": "異常"}, {"text": "LED燈管開關(綠色)正常", "hint": "請開關測試", "ok_label": "是", "ng_label": "異常"}, {"text": "LED燈正常無閃爍/色溫偏差/角度一致", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "防霧電熱開關(紅色)正常", "hint": "請用水測試", "ok_label": "是", "ng_label": "異常"}, {"text": "門固定夾可90度固定", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "門固定夾有適量上黃油", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "LED燈正常無閃爍狀況", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "後場立式冰櫃", "items": [{"text": "冰櫃門片緊密關閉", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "櫃內溫度正常  -18至-10度", "hint": "需用紅外線測溫槍量測確認", "ok_label": "是", "ng_label": "異常"}]}]}, "櫃台類": {"type": "acceptance", "ok_label": "是", "groups": [{"group": "後場金庫", "items": [{"text": "檢視外觀整體無變形或瑕疵", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視固定且穩固於地面", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視抽屜及金庫鑰匙/鑰匙可開啟與鎖上", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "收銀前櫃台", "items": [{"text": "檢視台數尺寸及位置與配置相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視外觀整體無掉漆、變型或瑕疵", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視個體接合平整/桌面無刮傷平整", "hint": "桌板銜接處填縫平整", "ok_label": "是", "ng_label": "異常"}, {"text": "抽取側板拉取正常順暢", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "抽取側板桌面、邊緣無刮括傷或破損", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "下方備品分隔台拉取順暢", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視前場金庫開啟順暢及關閉時漏洞未過大", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視前場金庫鑰匙可正常操作", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "後櫃檯", "items": [{"text": "檢視台數尺寸及位置與配置相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視外觀整體無掉漆、破損或瑕疵", "hint": "桌板銜接處填縫平整", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視後櫃檯所有門片開啟順暢.關閉未變形", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視EC櫃/後櫃台EC櫃-抽屜抽拉順暢無異音", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視下洗手槽檯面勿刮痕或碰撞情形", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "水槽與檯面接縫處密合", "hint": "矽立康品質", "ok_label": "是", "ng_label": "異常"}, {"text": "洗手槽檔板(側邊板)穩固無晃動", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視下洗手槽下方有水管擋板", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視洗手槽下方門片後方掛架穩固", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "FF區櫃檯", "items": [{"text": "檢視台數尺寸及位置與配置相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視外觀整體無掉漆、破裂或瑕疵", "hint": "桌板銜接處填縫平整", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視所有門片開啟順暢.關閉無變形", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視所有門片鉸鏈穩固.螺絲無短缺", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視桌面無刮傷平整", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視醬料盒抽取順暢", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視櫃台下方櫃體底板平整", "hint": "請取出檢視", "ok_label": "是", "ng_label": "異常"}, {"text": "內部管線無遭受到擠壓情形", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視垃圾桶掀板開啟操作與順暢", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視垃圾桶上字樣平整無破損、褪色", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "布旗桿", "items": [{"text": "檢視外觀整體無破損或瑕疵並安裝完成", "hint": "安裝位置依公司規範", "ok_label": "是", "ng_label": "異常"}, {"text": "附有工具包與說明書", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "咖啡櫃檯", "items": [{"text": "檢視外觀整體無掉漆、破裂或瑕疵", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視咖啡櫃依配置位置安裝無誤", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視咖啡櫃平整無晃動。", "hint": "桌板銜接處填縫平整", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視咖啡櫃抽取板正常且順暢", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視咖啡側板平整且桌面無刮傷現象", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視咖啡字體位置有無遭遮蔽情形", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視咖啡價格排背板安裝穩固無晃動/無破損", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "休憩桌椅 (二人/吧檯/戶外休憩桌椅)", "items": [{"text": "檢視設置位置與配置相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視外觀整體無破損或瑕疵", "hint": "請實際搖晃", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視桌板與支柱平整穩固", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視椅子與地面平整無晃動", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視桌板側邊修邊完整無暇疵", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "戶外海報夾", "items": [{"text": "位置與Layout相符", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "四週固定夾開合正常", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "PVC海報膜無破損", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "鋼製平板車", "items": [{"text": "檢視外觀正常無掉漆、破損或變形", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視滑輪部分固定無晃動", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "測試滑輪部分運作正常順暢", "hint": "", "ok_label": "是", "ng_label": "異常"}]}]}, "其他": {"type": "acceptance", "ok_label": "是", "groups": [{"group": "UPS不斷電系統", "items": [{"text": "依規範配置於店長桌下方", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢視外觀整體無掉漆或瑕疵", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "電池放電功能正常", "hint": "請實際測試", "ok_label": "是", "ng_label": "異常"}]}, {"group": "淨水系統", "items": [{"text": "整體外觀完整與清潔度良好", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "接頭漏水、開關有無打開", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "附有保固卡及扳手，並確實填寫", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "RO機固定安裝後無搖晃/無漏水", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "RO排水接口處需矽利康填滿", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "臥式冰櫃", "items": [{"text": "確認整體外觀完整與清潔度良好", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "燈具正常明亮", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "檢查網子數量正確。", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "滑門順暢且滑到最上面會卡住", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "確認溫度警報開關有開啟", "hint": "", "ok_label": "是", "ng_label": "異常"}]}, {"group": "監視系統", "items": [{"text": "鏡頭可正常顯示", "hint": "請用螢幕確認-如無使用1080螢幕請回報主管", "ok_label": "是", "ng_label": "異常"}, {"text": "攝影機安裝位置正確", "hint": "需與店長確認完成", "ok_label": "是", "ng_label": "異常"}, {"text": "集音器安裝正確且遠離喇叭可正常收音", "hint": "", "ok_label": "是", "ng_label": "異常"}, {"text": "銀幕切換器可以正常切換", "hint": "銀幕切換器(KMP)", "ok_label": "是", "ng_label": "異常"}, {"text": "音樂頻道機上盒設定完成且收音清楚", "hint": "", "ok_label": "是", "ng_label": "異常"}]}]}};
+const SHEET_NAMES = Object.keys(FORMS_SCHEMA);
+
+// ==========================================
+// 3. 清脆點擊音效引擎 (Web Audio API 零外部音檔依賴)
+// ==========================================
+let soundEnabled = true;
+let sharedAudioCtx = null;
+
+function playCrispClick(type = 'tap') {
+  if (!soundEnabled) return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!sharedAudioCtx) {
+      sharedAudioCtx = new AudioCtx();
+    }
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume();
+    }
+
+    const now = sharedAudioCtx.currentTime;
+    const osc = sharedAudioCtx.createOscillator();
+    const gain = sharedAudioCtx.createGain();
+
+    if (type === 'confirm') {
+      // 清脆雙音確認提示音
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1046.5, now); // C6
+      osc.frequency.setValueAtTime(1318.5, now + 0.055); // E6
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      osc.connect(gain);
+      gain.connect(sharedAudioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.16);
+    } else if (type === 'toggle') {
+      // 清脆機械按鍵滴答聲
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1450, now);
+      osc.frequency.exponentialRampToValueAtTime(620, now + 0.032);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+      osc.connect(gain);
+      gain.connect(sharedAudioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.036);
+    } else {
+      // 一般輕快點擊聲
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(520, now + 0.028);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+      osc.connect(gain);
+      gain.connect(sharedAudioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.032);
+    }
+  } catch (e) {
+    // 忽略瀏覽器音效限制
+  }
+}
+
+function toggleClickSound() {
+  soundEnabled = !soundEnabled;
+  const btn = document.getElementById('btnSoundToggle');
+  if (btn) {
+    btn.textContent = soundEnabled ? '🔊 音效：開' : '🔇 音效：關';
+  }
+  if (soundEnabled) playCrispClick('confirm');
+}
+
+// 全域點擊偵測：點擊任何按鈕、分頁、勾選框、晶片皆觸發清脆點擊音
+document.addEventListener('pointerdown', function(e) {
+  const target = e.target.closest('button, .sheet-tab, .neu-radio, .neu-chip');
+  if (!target) return;
+  if (target.id === 'btnSoundToggle') return;
+  if (target.classList.contains('neu-btn-success')) {
+    playCrispClick('confirm');
+  } else if (target.classList.contains('neu-radio') || target.classList.contains('neu-chip')) {
+    playCrispClick('toggle');
+  } else {
+    playCrispClick('tap');
+  }
+}, { passive: true });
+
+// ==========================================
+// 記憶體備援儲存與專案管理
+// ==========================================
+let memoryProjectsFallback = [];
+let memoryAuditFallback = [];
+
+function safeLoadStorage(key, fallback) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function safeSaveStorage(key, val) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(val));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+let projects = safeLoadStorage('eng_checklist_projects_v1', memoryProjectsFallback);
+let auditLogs = safeLoadStorage('eng_checklist_audit_v1', memoryAuditFallback);
+const INTERNAL_GOOGLE_FORM_ENDPOINT = '';
+
+let currentProjectId = null;
+let currentSheetName = SHEET_NAMES[0];
+let lastGeneratedJpgPages = []; // 儲存 A4 分頁 JPG DataURLs
+let lastGeneratedPdfBlobUrl = '';
+let lastGeneratedFileName = '';
+
+function getFormattedNow() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function saveProjectsToStorage() {
+  memoryProjectsFallback = projects;
+  safeSaveStorage('eng_checklist_projects_v1', projects);
+}
+
+function recordSystemUsage(actionType, project, sheetName, summaryText) {
+  const nowStr = getFormattedNow();
+  const logEntry = {
+    time: nowStr,
+    action: actionType,
+    code: project ? project.code : '-',
+    name: project ? project.name : '-',
+    addr: project ? project.addr : '-',
+    sheet: sheetName || '系統首頁',
+    summary: summaryText || ''
+  };
+  auditLogs.unshift(logEntry);
+  if (auditLogs.length > 100) auditLogs.pop();
+  memoryAuditFallback = auditLogs;
+  safeSaveStorage('eng_checklist_audit_v1', auditLogs);
+
+  if (INTERNAL_GOOGLE_FORM_ENDPOINT && INTERNAL_GOOGLE_FORM_ENDPOINT.startsWith('http')) {
+    try {
+      const formData = new URLSearchParams();
+      formData.append('time', nowStr);
+      formData.append('action', actionType);
+      formData.append('code', logEntry.code);
+      formData.append('name', logEntry.name);
+      formData.append('addr', logEntry.addr);
+      formData.append('sheet', logEntry.sheet);
+      formData.append('summary', summaryText);
+      fetch(INTERNAL_GOOGLE_FORM_ENDPOINT, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString()
+      }).catch(() => {});
+    } catch (err) {}
+  }
+}
+
+// 1. 專案新增、刪除與列表渲染
+function addProject() {
+  const codeEl = document.getElementById('inpStoreCode');
+  const nameEl = document.getElementById('inpStoreName');
+  const addrEl = document.getElementById('inpStoreAddr');
+
+  const code = codeEl ? codeEl.value.trim() : '';
+  const name = nameEl ? nameEl.value.trim() : '';
+  const addr = addrEl ? addrEl.value.trim() : '';
+
+  if (!code || !name || !addr) {
+    showToast('⚠️ 請完整填寫「店編」、「店名」與「地址」');
+    if (!code && codeEl) codeEl.focus();
+    else if (!name && nameEl) nameEl.focus();
+    else if (!addr && addrEl) addrEl.focus();
+    return;
+  }
+
+  const nowStr = getFormattedNow();
+  const newProj = {
+    id: 'PRJ_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+    code,
+    name,
+    addr,
+    updatedAt: nowStr,
+    sheetsData: {}
+  };
+
+  if (!Array.isArray(projects)) projects = [];
+  projects.unshift(newProj);
+  saveProjectsToStorage();
+
+  codeEl.value = '';
+  nameEl.value = '';
+  addrEl.value = '';
+
+  recordSystemUsage('建立專案', newProj, '全部表單', `新增專案 ${code} ${name}`);
+  renderProjectList();
+  showToast(`✅ 已成功建立專案：${code} ${name}`);
+}
+
+function deleteProject(id, event) {
+  if (event) event.stopPropagation();
+  const target = projects.find(p => p.id === id);
+  if (!target) return;
+  if (!confirm(`確定要刪除專案「${target.code} - ${target.name}」嗎？此操作無法復原。`)) return;
+
+  projects = projects.filter(p => p.id !== id);
+  saveProjectsToStorage();
+  recordSystemUsage('刪除專案', target, '全部表單', `刪除專案 ${target.code} ${target.name}`);
+  renderProjectList();
+  showToast('🗑️ 已刪除專案項目');
+}
+
+function renderProjectList() {
+  const container = document.getElementById('projectListContainer');
+  const countBadge = document.getElementById('projectCountBadge');
+  if (!container) return;
+  if (countBadge) countBadge.textContent = `${projects.length} 筆專案`;
+
+  if (projects.length === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:26px; color:var(--text-sub); font-size:15.5px;">尚無專案資料，請於上方輸入店編、店名、地址建立第一筆專案。</div>`;
+    return;
+  }
+
+  container.innerHTML = projects.map(p => {
+    const filledSheets = Object.keys(p.sheetsData || {}).length;
+    return `
+      <div class="neu-card-sm project-item">
+        <div class="project-meta">
+          <h3>🏪 [${escapeHtml(p.code)}] ${escapeHtml(p.name)}</h3>
+          <p>📍 地址：${escapeHtml(p.addr)}</p>
+          <p style="margin-top:4px; color:var(--accent-dark); font-weight:700;">
+            🗓️ 修改日期：${escapeHtml(p.updatedAt)} ｜ 已填寫分項：${filledSheets} / ${SHEET_NAMES.length}
+          </p>
+        </div>
+        <div class="project-actions">
+          <button type="button" class="neu-btn neu-btn-primary" onclick="openProject('${p.id}')">✏️ 進入檢核 / 修改</button>
+          <button type="button" class="neu-btn neu-btn-danger" onclick="deleteProject('${p.id}', event)">🗑️ 刪除</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openProject(id) {
+  const proj = projects.find(p => p.id === id);
+  if (!proj) return;
+  currentProjectId = id;
+  currentSheetName = SHEET_NAMES[0];
+
+  document.getElementById('editStoreCode').value = proj.code;
+  document.getElementById('editStoreName').value = proj.name;
+  document.getElementById('editStoreAddr').value = proj.addr;
+  document.getElementById('displayAutoDate').textContent = proj.updatedAt;
+
+  document.getElementById('viewHome').classList.add('hidden');
+  document.getElementById('viewWorkspace').classList.remove('hidden');
+  document.getElementById('btnBackHome').style.display = 'inline-flex';
+  document.getElementById('workspaceBottomBar').classList.remove('hidden');
+
+  recordSystemUsage('進入專案檢核', proj, currentSheetName, '開啟專案作業畫面');
+  renderSheetTabs();
+  renderCurrentSheetForm();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goHome() {
+  currentProjectId = null;
+  document.getElementById('viewWorkspace').classList.add('hidden');
+  document.getElementById('workspaceBottomBar').classList.add('hidden');
+  document.getElementById('btnBackHome').style.display = 'none';
+  document.getElementById('viewHome').classList.remove('hidden');
+  renderProjectList();
+}
+
+function updateCurrentProjectMeta() {
+  const proj = getCurrentProject();
+  if (!proj) return;
+  proj.code = document.getElementById('editStoreCode').value.trim();
+  proj.name = document.getElementById('editStoreName').value.trim();
+  proj.addr = document.getElementById('editStoreAddr').value.trim();
+  touchProjectModifiedDate(proj);
+  updateExportHeaderMeta();
+}
+
+function touchProjectModifiedDate(proj) {
+  const nowStr = getFormattedNow();
+  proj.updatedAt = nowStr;
+  const d1 = document.getElementById('displayAutoDate');
+  const d2 = document.getElementById('exportDateBadge');
+  if (d1) d1.textContent = nowStr;
+  if (d2) d2.textContent = nowStr;
+  saveProjectsToStorage();
+}
+
+function getCurrentProject() {
+  return projects.find(p => p.id === currentProjectId);
+}
+
+function getSheetState(proj, sheetName) {
+  if (!proj.sheetsData) proj.sheetsData = {};
+  if (!proj.sheetsData[sheetName]) {
+    proj.sheetsData[sheetName] = {
+      answers: {},
+      inputs: {},
+      photos: [],
+      supplementNote: ''
+    };
+  }
+  return proj.sheetsData[sheetName];
+}
+
+// 2. 渲染 9 大 SHEET 選擇分頁
+function renderSheetTabs() {
+  const proj = getCurrentProject();
+  if (!proj) return;
+  const container = document.getElementById('sheetTabsContainer');
+  container.innerHTML = SHEET_NAMES.map(name => {
+    const sData = proj.sheetsData && proj.sheetsData[name];
+    const hasContent = sData && (Object.keys(sData.answers || {}).length > 0 || Object.keys(sData.inputs || {}).length > 0 || (sData.photos || []).length > 0);
+    const activeCls = name === currentSheetName ? 'active' : '';
+    return `
+      <div class="sheet-tab ${activeCls}" onclick="selectSheet('${name}')">
+        ${escapeHtml(name)}${hasContent ? '<span class="dot" title="已有填寫資料"></span>' : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function selectSheet(name) {
+  currentSheetName = name;
+  renderSheetTabs();
+  renderCurrentSheetForm();
+}
+
+function updateExportHeaderMeta() {
+  const proj = getCurrentProject();
+  if (!proj) return;
+  document.getElementById('activeSheetTitle').textContent = `【${currentSheetName}】檢核表單`;
+  document.getElementById('exportMetaLine').textContent = `店編：${proj.code} ｜ 店名：${proj.name} ｜ 地址：${proj.addr}`;
+  document.getElementById('exportDateBadge').textContent = proj.updatedAt;
+}
+
+// 3. 動態渲染各 SHEET 表單內容
+function renderCurrentSheetForm() {
+  const proj = getCurrentProject();
+  if (!proj) return;
+  const schema = FORMS_SCHEMA[currentSheetName];
+  const state = getSheetState(proj, currentSheetName);
+
+  updateExportHeaderMeta();
+  document.getElementById('sheetSupplementNote').value = state.supplementNote || '';
+  renderPhotoGrid(state);
+
+  const body = document.getElementById('dynamicFormBody');
+  let html = '';
+  let totalCheckCount = 0;
+  let checkedCount = 0;
+
+  if (schema.type === 'acceptance') {
+    schema.groups.forEach((grp, gIdx) => {
+      html += `<div class="section-banner">● ${escapeHtml(grp.group)}</div>`;
+      grp.items.forEach((item, iIdx) => {
+        const key = `g${gIdx}_i${iIdx}`;
+        const val = state.answers[key] || '';
+        const noteVal = state.inputs[key + '_note'] || '';
+        totalCheckCount++;
+        if (val) checkedCount++;
+
+        html += `
+          <div class="check-row">
+            <div class="check-row-header">
+              <div class="check-title">
+                ${escapeHtml(item.text)}
+                ${item.hint ? `<div class="check-hint">💡 查核標準/備註：${escapeHtml(item.hint)}</div>` : ''}
+              </div>
+              <div class="toggle-group">
+                <span class="neu-radio ${val === item.ok_label ? 'selected-ok' : ''}" onclick="setAnswer('${key}', '${item.ok_label}')">☑ ${escapeHtml(item.ok_label)}</span>
+                <span class="neu-radio ${val === item.ng_label ? 'selected-ng' : ''}" onclick="setAnswer('${key}', '${item.ng_label}')">⚠ ${escapeHtml(item.ng_label)}</span>
+                <span class="neu-radio ${val === '無此項' ? 'selected-na' : ''}" onclick="setAnswer('${key}', '無此項')">➖ 無此項</span>
+              </div>
+            </div>
+            <div>
+              <input type="text" class="neu-inset" placeholder="異常備註與處理說明 / 實測數值填寫..." value="${escapeAttr(noteVal)}" oninput="setInput('${key}_note', this.value)" />
+            </div>
+          </div>
+        `;
+      });
+    });
+  } else if (schema.type === 'inspection') {
+    schema.stages.forEach((stg, sIdx) => {
+      const stageDateKey = `stage_date_${sIdx}`;
+      const stageDateVal = state.inputs[stageDateKey] || '';
+      html += `
+        <div class="section-banner" style="flex-wrap:wrap; gap:10px;">
+          <span>🔍 ${escapeHtml(stg.stage)}</span>
+          <div style="display:flex; align-items:center; gap:6px; font-size:15px;">
+            <span>檢查日期：</span>
+            <input type="date" class="neu-inset" style="width:auto; padding:6px 10px;" value="${escapeAttr(stageDateVal)}" oninput="setInput('${stageDateKey}', this.value)" />
+          </div>
+        </div>
+      `;
+      stg.categories.forEach((cat, cIdx) => {
+        html += `<div class="sub-cat-header">▸ ${escapeHtml(cat.category)} ${cat.note ? `<span style="color:var(--danger); font-size:14px;">(${escapeHtml(cat.note)})</span>` : ''}</div>`;
+        cat.items.forEach((item, iIdx) => {
+          const key = `s${sIdx}_c${cIdx}_i${iIdx}`;
+          const val = state.answers[key] || '';
+          const noteVal = state.inputs[key + '_note'] || '';
+          totalCheckCount++;
+          if (val || (item.is_bag_count && noteVal)) checkedCount++;
+
+          if (item.is_bag_count) {
+            html += `
+              <div class="check-row">
+                <div class="check-row-header">
+                  <div class="check-title">${escapeHtml(item.text)}</div>
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <input type="text" class="neu-inset" style="width:160px;" placeholder="輸入種類與袋數" value="${escapeAttr(noteVal)}" oninput="setInput('${key}_note', this.value)" />
+                    <span style="font-weight:700;">袋</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          } else {
+            html += `
+              <div class="check-row">
+                <div class="check-row-header">
+                  <div class="check-title">${escapeHtml(item.text)}</div>
+                  <div class="toggle-group">
+                    <span class="neu-radio ${val === item.yes_label ? 'selected-ok' : ''}" onclick="setAnswer('${key}', '${item.yes_label}')">☑ ${escapeHtml(item.yes_label)}</span>
+                    <span class="neu-radio ${val === item.no_label ? 'selected-ng' : ''}" onclick="setAnswer('${key}', '${item.no_label}')">⚠ ${escapeHtml(item.no_label)}</span>
+                    ${item.has_na ? `<span class="neu-radio ${val === '無此項' ? 'selected-na' : ''}" onclick="setAnswer('${key}', '無此項')">➖ 無此項</span>` : ''}
+                  </div>
+                </div>
+                <input type="text" class="neu-inset" placeholder="異常回報及處理內容 / 備註..." value="${escapeAttr(noteVal)}" oninput="setInput('${key}_note', this.value)" />
+              </div>
+            `;
+          }
+        });
+      });
+    });
+  } else if (schema.type === 'survey') {
+    schema.sections.forEach((sec, sIdx) => {
+      html += `<div class="section-banner">📐 ${escapeHtml(sec.section)}</div>`;
+      sec.items.forEach((item, iIdx) => {
+        const key = `sv_${sIdx}_${iIdx}`;
+        const rawContent = item.content || '';
+        const options = extractCheckboxOptions(rawContent);
+        const selectedArr = Array.isArray(state.answers[key]) ? state.answers[key] : [];
+        const textVal = state.inputs[key + '_val'] || '';
+        const extraVal = state.inputs[key + '_extra'] || '';
+
+        totalCheckCount++;
+        if (selectedArr.length > 0 || textVal || extraVal) checkedCount++;
+
+        html += `
+          <div class="check-row">
+            <div class="check-title">${escapeHtml(item.label)}</div>
+            ${rawContent ? `<div class="check-subtext">${escapeHtml(rawContent)}</div>` : ''}
+            ${options.length > 0 ? `
+              <div class="chip-wrap">
+                ${options.map(opt => {
+                  const isChk = selectedArr.includes(opt);
+                  return `<span class="neu-chip ${isChk ? 'checked' : ''}" onclick="toggleSurveyOption('${key}', '${escapeAttr(opt)}')">${isChk ? '☑' : '☐'} ${escapeHtml(opt)}</span>`;
+                }).join('')}
+              </div>
+            ` : ''}
+            <div class="${item.extra ? 'grid-2' : ''}" style="margin-top:4px;">
+              <input type="text" class="neu-inset" placeholder="填寫數據、尺寸(cm/m²)、數量、型式或說明..." value="${escapeAttr(textVal)}" oninput="setInput('${key}_val', this.value)" />
+              ${item.extra ? `<input type="text" class="neu-inset" placeholder="${escapeAttr(item.extra)}" value="${escapeAttr(extraVal)}" oninput="setInput('${key}_extra', this.value)" />` : ''}
+            </div>
+          </div>
+        `;
+      });
+    });
+  } else if (schema.type === 'change_order') {
+    html += `<div class="section-banner">📝 A. 基本資訊</div><div class="grid-2">`;
+    schema.basic_fields.forEach((f, idx) => {
+      const key = `co_basic_${idx}`;
+      const isDate = f.includes('日');
+      const val = state.inputs[key] || (f === '店名' ? proj.name : '');
+      totalCheckCount++;
+      if (val) checkedCount++;
+      html += `
+        <div>
+          <label class="field-label">${escapeHtml(f)}</label>
+          <input type="${isDate ? 'date' : 'text'}" class="neu-inset" value="${escapeAttr(val)}" placeholder="請輸入${escapeAttr(f)}" oninput="setInput('${key}', this.value)" />
+        </div>
+      `;
+    });
+    html += `</div><div class="section-banner">🔄 B. 差異項目</div><div class="grid-3">`;
+    schema.diff_fields.forEach((f, idx) => {
+      const key = `co_diff_${idx}`;
+      const val = state.inputs[key] || '';
+      totalCheckCount++;
+      if (val) checkedCount++;
+      html += `
+        <div>
+          <label class="field-label">${escapeHtml(f)}</label>
+          <input type="text" class="neu-inset" value="${escapeAttr(val)}" placeholder="請填寫${escapeAttr(f)}" oninput="setInput('${key}', this.value)" />
+        </div>
+      `;
+    });
+    html += `</div><div class="section-banner">📌 C ~ E. 變更原因與前後圖面差異說明</div>`;
+    schema.reason_fields.forEach((f, idx) => {
+      const key = `co_reason_${idx}`;
+      const val = state.inputs[key] || '';
+      totalCheckCount++;
+      if (val) checkedCount++;
+      html += `
+        <div style="margin-bottom:12px;">
+          <label class="field-label">${escapeHtml(f)}</label>
+          <textarea rows="3" class="neu-inset" placeholder="請詳細填寫${escapeAttr(f)}..." oninput="setInput('${key}', this.value)">${escapeHtml(val)}</textarea>
+        </div>
+      `;
+    });
+  }
+
+  body.innerHTML = html;
+  document.getElementById('exportProgressBadge').textContent = `已填寫項目：${checkedCount} / ${totalCheckCount}`;
+}
+
+function extractCheckboxOptions(text) {
+  if (!text || !text.includes('□')) return [];
+  const parts = text.split('□').map(s => s.trim()).filter(Boolean);
+  return parts.map(p => p.replace(/_{2,}/g, '').replace(/[：:]\s*$/, '').trim()).filter(p => p.length > 0 && p.length <= 28);
+}
+
+function setAnswer(key, value) {
+  const proj = getCurrentProject();
+  if (!proj) return;
+  const state = getSheetState(proj, currentSheetName);
+  state.answers[key] = (state.answers[key] === value) ? '' : value;
+  touchProjectModifiedDate(proj);
+  renderSheetTabs();
+  renderCurrentSheetForm();
+}
+
+function toggleSurveyOption(key, opt) {
+  const proj = getCurrentProject();
+  if (!proj) return;
+  const state = getSheetState(proj, currentSheetName);
+  if (!Array.isArray(state.answers[key])) state.answers[key] = [];
+  const idx = state.answers[key].indexOf(opt);
+  if (idx >= 0) {
+    state.answers[key].splice(idx, 1);
+  } else {
+    state.answers[key].push(opt);
+  }
+  touchProjectModifiedDate(proj);
+  renderSheetTabs();
+  renderCurrentSheetForm();
+}
+
+function setInput(key, value) {
+  const proj = getCurrentProject();
+  if (!proj) return;
+  const state = getSheetState(proj, currentSheetName);
+  state.inputs[key] = value;
+  touchProjectModifiedDate(proj);
+  renderSheetTabs();
+}
+
+function saveSheetSupplementNote() {
+  const proj = getCurrentProject();
+  if (!proj) return;
+  const state = getSheetState(proj, currentSheetName);
+  state.supplementNote = document.getElementById('sheetSupplementNote').value;
+  touchProjectModifiedDate(proj);
+}
+
+// 4. 分項表單拍照與輕量化相片壓縮處理
+function handlePhotoUpload(event) {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  const proj = getCurrentProject();
+  if (!proj) return;
+  const state = getSheetState(proj, currentSheetName);
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const maxW = 720;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxW) {
+          h = Math.round(h * (maxW / w));
+          w = maxW;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.68);
+        state.photos.push({
+          id: 'PH_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          dataUrl: compressedDataUrl,
+          time: getFormattedNow()
+        });
+        touchProjectModifiedDate(proj);
+        renderPhotoGrid(state);
+        renderSheetTabs();
+        showToast('📸 已新增現場照片');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = '';
+}
+
+function deletePhoto(photoId) {
+  const proj = getCurrentProject();
+  if (!proj) return;
+  const state = getSheetState(proj, currentSheetName);
+  state.photos = state.photos.filter(ph => ph.id !== photoId);
+  touchProjectModifiedDate(proj);
+  renderPhotoGrid(state);
+  renderSheetTabs();
+}
+
+function renderPhotoGrid(state) {
+  const grid = document.getElementById('photoPreviewGrid');
+  if (!state.photos || state.photos.length === 0) {
+    grid.innerHTML = `<div style="font-size:14px; color:var(--text-sub); grid-column:1/-1;">尚未附加現場照片，可點擊右上方「立即拍照」或「從相簿選取」。</div>`;
+    return;
+  }
+  grid.innerHTML = state.photos.map(ph => `
+    <div class="photo-thumb">
+      <img src="${ph.dataUrl}" alt="現場照片" />
+      <button type="button" class="photo-del-btn" onclick="deletePhoto('${ph.id}')" title="移除照片">✕</button>
+    </div>
+  `).join('');
+}
+
+// ==========================================
+// 1. 降低完成後產生的表單檔案大小 (*.JPG / *.PDF)，並以 A4 規格智慧分頁
+// ==========================================
+async function confirmAndExportAll() {
+  const proj = getCurrentProject();
+  if (!proj) return;
+
+  touchProjectModifiedDate(proj);
+  showToast('⏳ 正在產生 A4 輕量分頁 JPG 與 PDF，請稍候...');
+
+  const captureEl = document.getElementById('exportCaptureArea');
+  const btnsToHide = captureEl.querySelectorAll('.no-export-btns, .photo-del-btn');
+  btnsToHide.forEach(b => b.style.visibility = 'hidden');
+  captureEl.classList.add('a4-exporting');
+
+  try {
+    // 採 1.25x 倍率 + 白底扁平化樣式，大幅降低檔案容量並保持文字銳利
+    const fullCanvas = await html2canvas(captureEl, {
+      scale: 1.25,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+
+    captureEl.classList.remove('a4-exporting');
+    btnsToHide.forEach(b => b.style.visibility = 'visible');
+
+    // A4 比例 (210mm x 297mm -> 寬高比 1 : 1.4142)
+    const a4Ratio = 297 / 210;
+    const pagePixelWidth = fullCanvas.width;
+    const pagePixelHeight = Math.floor(pagePixelWidth * a4Ratio);
+    const totalPages = Math.max(1, Math.ceil(fullCanvas.height / pagePixelHeight));
+
+    lastGeneratedJpgPages = [];
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
+
+    const pdfPageW = 210;
+    const pdfPageH = 297;
+    const margin = 8;
+    const usableW = pdfPageW - margin * 2;
+    const usableH = pdfPageH - margin * 2;
+
+    let totalJpgBytes = 0;
+
+    for (let p = 0; p < totalPages; p++) {
+      const srcY = p * pagePixelHeight;
+      const sliceH = Math.min(pagePixelHeight, fullCanvas.height - srcY);
+
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = pagePixelWidth;
+      pageCanvas.height = pagePixelHeight;
+      const ctx = pageCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      ctx.drawImage(
+        fullCanvas,
+        0, srcY, pagePixelWidth, sliceH,
+        0, 0, pagePixelWidth, sliceH
+      );
+
+      // 加上 A4 頁碼標記
+      ctx.fillStyle = '#64748b';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`第 ${p + 1} 頁 / 共 ${totalPages} 頁（A4規格）`, pageCanvas.width - 20, pageCanvas.height - 14);
+
+      // 0.62 JPEG 壓縮品質：大幅縮小檔案體積（單頁約 80KB~180KB），且文字清晰可辨
+      const pageJpgDataUrl = pageCanvas.toDataURL('image/jpeg', 0.62);
+      lastGeneratedJpgPages.push(pageJpgDataUrl);
+      totalJpgBytes += Math.round((pageJpgDataUrl.length * 3) / 4);
+
+      if (p > 0) pdf.addPage('a4', 'p');
+      pdf.addImage(pageJpgDataUrl, 'JPEG', margin, margin, usableW, usableH, undefined, 'FAST');
+    }
+
+    const safeDate = proj.updatedAt.replace(/[:\s]/g, '-');
+    lastGeneratedFileName = `${proj.code}_${proj.name}_${currentSheetName}_${safeDate}`;
+
+    const pdfBlob = pdf.output('blob');
+    if (lastGeneratedPdfBlobUrl) URL.revokeObjectURL(lastGeneratedPdfBlobUrl);
+    lastGeneratedPdfBlobUrl = URL.createObjectURL(pdfBlob);
+
+    const jpgKB = Math.max(1, Math.round(totalJpgBytes / 1024));
+    const pdfKB = Math.max(1, Math.round(pdfBlob.size / 1024));
+
+    const state = getSheetState(proj, currentSheetName);
+    const ansCount = Object.keys(state.answers || {}).length;
+    const photoCount = (state.photos || []).length;
+    recordSystemUsage(
+      '確認完成匯出',
+      proj,
+      currentSheetName,
+      `A4共${totalPages}頁, JPG:${jpgKB}KB, PDF:${pdfKB}KB, 勾選:${ansCount}項, 照片:${photoCount}張`
+    );
+
+    document.getElementById('generatedJpgPreview').src = lastGeneratedJpgPages[0];
+    document.getElementById('exportFileStatsText').innerHTML =
+      `已產生 <strong>A4 規格共 ${totalPages} 頁</strong> 輕量檔案（JPG 總計約 <strong>${jpgKB} KB</strong> ｜ PDF 約 <strong>${pdfKB} KB</strong>），兼顧清晰度與快速傳送：`;
+
+    document.getElementById('exportResultModal').classList.add('show');
+    showToast(`✅ 已產生 A4 共 ${totalPages} 頁（PDF ${pdfKB}KB）`);
+  } catch (err) {
+    captureEl.classList.remove('a4-exporting');
+    btnsToHide.forEach(b => b.style.visibility = 'visible');
+    console.error(err);
+    showToast('❌ 表單轉檔發生異常，請重試');
+  }
+}
+
+async function downloadGeneratedJpg() {
+  if (!lastGeneratedJpgPages || lastGeneratedJpgPages.length === 0) return;
+
+  // 行動裝置支援 Web Share API 時，可一次將所有 A4 分頁 JPG 存入相簿
+  try {
+    const files = [];
+    for (let i = 0; i < lastGeneratedJpgPages.length; i++) {
+      const res = await fetch(lastGeneratedJpgPages[i]);
+      const blob = await res.blob();
+      const pageSuffix = lastGeneratedJpgPages.length > 1 ? `_P${i + 1}` : '';
+      files.push(new File([blob], `${lastGeneratedFileName}${pageSuffix}.jpg`, { type: 'image/jpeg' }));
+    }
+    if (navigator.canShare && navigator.canShare({ files })) {
+      await navigator.share({
+        files,
+        title: lastGeneratedFileName,
+        text: `工程流程檢核表單 A4 分頁圖檔（共 ${files.length} 頁，可選擇儲存影像存入相簿）`
+      });
+      return;
+    }
+  } catch (e) {}
+
+  // PC 端逐頁下載輕量 A4 JPG
+  lastGeneratedJpgPages.forEach((dataUrl, idx) => {
+    const pageSuffix = lastGeneratedJpgPages.length > 1 ? `_P${idx + 1}` : '';
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `${lastGeneratedFileName}${pageSuffix}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+  showToast(`📥 已下載 ${lastGeneratedJpgPages.length} 張 A4 規格 JPG 檔案`);
+}
+
+function downloadGeneratedPdf() {
+  if (!lastGeneratedPdfBlobUrl) return;
+  const a = document.createElement('a');
+  a.href = lastGeneratedPdfBlobUrl;
+  a.download = `${lastGeneratedFileName}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('📄 已下載 A4 分頁輕量 PDF 檔案');
+}
+
+async function shareViaLine() {
+  const proj = getCurrentProject();
+  if (!proj) return;
+  const shareText = `【工程流程檢核表單】\n店編：${proj.code}\n店名：${proj.name}\n地址：${proj.addr}\n項目：${currentSheetName}\n修改日期：${proj.updatedAt}`;
+
+  if (lastGeneratedJpgPages && lastGeneratedJpgPages.length > 0) {
+    try {
+      const files = [];
+      for (let i = 0; i < lastGeneratedJpgPages.length; i++) {
+        const res = await fetch(lastGeneratedJpgPages[i]);
+        const blob = await res.blob();
+        const pageSuffix = lastGeneratedJpgPages.length > 1 ? `_P${i + 1}` : '';
+        files.push(new File([blob], `${lastGeneratedFileName || '檢核表單'}${pageSuffix}.jpg`, { type: 'image/jpeg' }));
+      }
+      if (navigator.canShare && navigator.canShare({ files })) {
+        await navigator.share({
+          files,
+          title: `${proj.code} ${proj.name} - ${currentSheetName}`,
+          text: shareText
+        });
+        return;
+      }
+    } catch (e) {}
+  }
+
+  const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`;
+  window.open(lineUrl, '_blank');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str);
+}
+
+// 支援按 Enter 鍵直接建立專案
+document.addEventListener('DOMContentLoaded', function() {
+  ['inpStoreCode', 'inpStoreName', 'inpStoreAddr'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addProject();
+        }
+      });
+    }
+  });
+  renderProjectList();
+});
+
+renderProjectList();
+</script>
+</body>
+</html>
